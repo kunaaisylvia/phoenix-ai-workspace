@@ -216,3 +216,25 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# SQLite Database
+phoenix.db
+
+# Environment Variables
+.env
+
+# VS Code
+.vscode/
+
+# Secrets
+streamlit/secrets.toml
+
+# Static files
+backend/static/
+
+# Python cache
+.pytest_cache/
