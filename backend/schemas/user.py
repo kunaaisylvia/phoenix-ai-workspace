@@ -1,11 +1,11 @@
 from typing import Optional
-
 from sqlmodel import SQLModel
 
 
 class UserCreate(SQLModel):
     full_name: str
     email: str
+    password: str
 
 
 class UserRead(SQLModel):
