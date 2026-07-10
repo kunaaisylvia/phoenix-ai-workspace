@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
+from backend.core.security import get_current_user
 from backend.database.database import get_session
+from backend.models.user import User
 from backend.schemas.user import UserCreate, UserRead, UserUpdate
 from backend.services.user_service import (
     create_user,
@@ -27,6 +29,7 @@ def create_new_user(
 
 @router.get("/", response_model=list[UserRead])
 def read_users(
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     return get_users(session)
@@ -35,6 +38,7 @@ def read_users(
 @router.get("/{user_id}", response_model=UserRead)
 def read_user(
     user_id: int,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     return get_user(session, user_id)
@@ -44,14 +48,20 @@ def read_user(
 def update_existing_user(
     user_id: int,
     updated_user: UserUpdate,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    return update_user(session, user_id, updated_user)
+    return update_user(
+        session,
+        user_id,
+        updated_user,
+    )
 
 
 @router.delete("/{user_id}")
 def delete_existing_user(
     user_id: int,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     return delete_user(session, user_id)
