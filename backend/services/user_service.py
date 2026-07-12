@@ -6,7 +6,10 @@ from backend.schemas.user import UserCreate, UserUpdate
 from backend.core.security import hash_password
 
 
-def create_user(session: Session, user: UserCreate):
+def create_user(
+    session: Session,
+    user: UserCreate,
+):
     # Check if email already exists
     existing_user = session.exec(
         select(User).where(User.email == user.email)
@@ -22,6 +25,7 @@ def create_user(session: Session, user: UserCreate):
         full_name=user.full_name,
         email=user.email,
         hashed_password=hash_password(user.password),
+        role=user.role,
     )
 
     session.add(db_user)
@@ -31,17 +35,27 @@ def create_user(session: Session, user: UserCreate):
     return db_user
 
 
-def get_users(session: Session):
-    return session.exec(select(User)).all()
+def get_users(
+    session: Session,
+):
+    return session.exec(
+        select(User)
+    ).all()
 
 
-def get_user(session: Session, user_id: int):
-    user = session.get(User, user_id)
+def get_user(
+    session: Session,
+    user_id: int,
+):
+    user = session.get(
+        User,
+        user_id,
+    )
 
     if not user:
         raise HTTPException(
             status_code=404,
-            detail="User not found"
+            detail="User not found",
         )
 
     return user
@@ -52,12 +66,15 @@ def update_user(
     user_id: int,
     updated_user: UserUpdate,
 ):
-    user = session.get(User, user_id)
+    user = session.get(
+        User,
+        user_id,
+    )
 
     if not user:
         raise HTTPException(
             status_code=404,
-            detail="User not found"
+            detail="User not found",
         )
 
     if updated_user.full_name is not None:
@@ -66,6 +83,9 @@ def update_user(
     if updated_user.email is not None:
         user.email = updated_user.email
 
+    if updated_user.role is not None:
+        user.role = updated_user.role
+
     session.add(user)
     session.commit()
     session.refresh(user)
@@ -73,13 +93,19 @@ def update_user(
     return user
 
 
-def delete_user(session: Session, user_id: int):
-    user = session.get(User, user_id)
+def delete_user(
+    session: Session,
+    user_id: int,
+):
+    user = session.get(
+        User,
+        user_id,
+    )
 
     if not user:
         raise HTTPException(
             status_code=404,
-            detail="User not found"
+            detail="User not found",
         )
 
     session.delete(user)
