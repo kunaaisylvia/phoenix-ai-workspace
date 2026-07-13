@@ -1,6 +1,9 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from backend.models.user import User
+from backend.models.workspace import Workspace
+from backend.routers.workspace import router as workspace_router
 
 from backend.core.config import settings
 from backend.database.database import create_db_and_tables
@@ -25,6 +28,7 @@ app = FastAPI(
 app.include_router(health_router)
 app.include_router(users_router)
 app.include_router(auth_router)
+app.include_router(workspace_router)
 
 
 @app.get("/")
