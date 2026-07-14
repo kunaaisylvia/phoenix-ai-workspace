@@ -8,6 +8,10 @@ from backend.models.conversation import Conversation
 from backend.routers.conversation import (
     router as conversation_router,
 )
+from backend.models.message import Message
+from backend.routers.messages import (
+    router as messages_router,
+)
 
 from backend.core.config import settings
 from backend.database.database import create_db_and_tables
@@ -34,6 +38,7 @@ app.include_router(users_router)
 app.include_router(auth_router)
 app.include_router(workspace_router)
 app.include_router(conversation_router)
+app.include_router(messages_router)
 
 
 @app.get("/")
