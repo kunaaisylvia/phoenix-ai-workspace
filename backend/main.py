@@ -4,6 +4,10 @@ from fastapi import FastAPI
 from backend.models.user import User
 from backend.models.workspace import Workspace
 from backend.routers.workspace import router as workspace_router
+from backend.models.conversation import Conversation
+from backend.routers.conversation import (
+    router as conversation_router,
+)
 
 from backend.core.config import settings
 from backend.database.database import create_db_and_tables
@@ -29,6 +33,7 @@ app.include_router(health_router)
 app.include_router(users_router)
 app.include_router(auth_router)
 app.include_router(workspace_router)
+app.include_router(conversation_router)
 
 
 @app.get("/")
