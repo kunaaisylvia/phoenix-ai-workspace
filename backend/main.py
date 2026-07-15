@@ -19,6 +19,8 @@ from backend.models.user import User
 from backend.routers.health import router as health_router
 from backend.routers.users import router as users_router
 from backend.routers.auth import router as auth_router
+from backend.services.chat_service import ask_phoenix
+from backend.routers.chat import router as chat_router
 
 
 @asynccontextmanager
@@ -39,7 +41,14 @@ app.include_router(auth_router)
 app.include_router(workspace_router)
 app.include_router(conversation_router)
 app.include_router(messages_router)
+app.include_router(chat_router)
+from fastapi import Body
 
+@app.post("/test-ai")
+def test_ai(prompt: str = Body(..., embed=True)):
+    return {
+        "response": ask_phoenix(prompt)
+    }
 
 @app.get("/")
 def root():
