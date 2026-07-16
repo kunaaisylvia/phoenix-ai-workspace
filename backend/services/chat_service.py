@@ -56,18 +56,17 @@ Always behave like Phoenix.
 }
 
 
-def ask_phoenix(messages: list):
+def ask_phoenix(messages: list, stream: bool = False):
     """
     Sends the conversation history to Groq.
     """
 
-    response = client.chat.completions.create(
+    return client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[SYSTEM_PROMPT] + messages,
         temperature=0.7,
+        stream=stream,
     )
-
-    return response.choices[0].message.content
 
 
 def chat(
@@ -77,12 +76,9 @@ def chat(
     current_user: User,
 ):
     """
-    Complete Phoenix chat workflow.
+    Standard chat endpoint.
     """
 
-    # -----------------------------
-    # Save user message
-    # -----------------------------
     create_message(
         session=session,
         message=MessageCreate(
@@ -93,18 +89,12 @@ def chat(
         current_user=current_user,
     )
 
-    # -----------------------------
-    # Load conversation history
-    # -----------------------------
     db_messages = session.exec(
         select(Message)
         .where(Message.conversation_id == conversation_id)
         .order_by(Message.created_at)
     ).all()
 
-    # -----------------------------
-    # Convert history for Groq
-    # -----------------------------
     history = [
         {
             "role": message.role,
@@ -113,14 +103,10 @@ def chat(
         for message in db_messages
     ]
 
-    # -----------------------------
-    # Ask Phoenix
-    # -----------------------------
-    assistant_reply = ask_phoenix(history)
+    response = ask_phoenix(history)
 
-    # -----------------------------
-    # Save assistant response
-    # -----------------------------
+    assistant_reply = response.choices[0].message.content
+
     create_message(
         session=session,
         message=MessageCreate(
@@ -131,9 +117,75 @@ def chat(
         current_user=current_user,
     )
 
-    # -----------------------------
-    # Return response
-    # -----------------------------
     return {
         "response": assistant_reply
     }
+
+
+def stream_chat(
+    session: Session,
+    conversation_id: int,
+    prompt: str,
+    current_user: User,
+):
+    """
+    Streaming chat endpoint.
+    """
+
+    # Save user message
+    create_message(
+        session=session,
+        message=MessageCreate(
+            role="user",
+            content=prompt,
+            conversation_id=conversation_id,
+        ),
+        current_user=current_user,
+    )
+
+    # Load conversation history
+    db_messages = session.exec(
+        select(Message)
+        .where(Message.conversation_id == conversation_id)
+        .order_by(Message.created_at)
+    ).all()
+
+    history = [
+        {
+            "role": message.role,
+            "content": message.content,
+        }
+        for message in db_messages
+    ]
+
+    # Request streaming response
+    stream = ask_phoenix(
+        history,
+        stream=True,
+    )
+
+    full_response = ""
+
+    for chunk in stream:
+
+        if not chunk.choices:
+            continue
+
+        delta = chunk.choices[0].delta.content
+
+        if delta:
+
+            full_response += delta
+
+            yield delta
+
+    # Save assistant reply
+    create_message(
+        session=session,
+        message=MessageCreate(
+            role="assistant",
+            content=full_response,
+            conversation_id=conversation_id,
+        ),
+        current_user=current_user,
+    )
