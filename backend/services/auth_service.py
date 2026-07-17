@@ -13,26 +13,36 @@ def authenticate_user(
     email: str,
     password: str,
 ):
+    print("\n==============================")
+    print("LOGIN ATTEMPT")
+    print("==============================")
+    print("EMAIL RECEIVED:", repr(email))
+    print("PASSWORD RECEIVED:", repr(password))
+
     user = session.exec(
         select(User).where(User.email == email)
     ).first()
 
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid email or password",
+    print("USER FOUND:", user is not None)
+
+    if user:
+        print("DB EMAIL:", user.email)
+        print("HASH:", user.hashed_password)
+
+        valid = verify_password(
+            password,
+            user.hashed_password,
         )
 
-    if not verify_password(
-        password,
-        user.hashed_password,
-    ):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid email or password",
-        )
+        print("PASSWORD VALID:", valid)
 
-    return user
+        if valid:
+            return user
+
+    raise HTTPException(
+        status_code=401,
+        detail="Invalid email or password",
+    )
 
 
 def login_user(
@@ -47,7 +57,7 @@ def login_user(
     )
 
     access_token = create_access_token(
-        data={"sub": user.email}
+        {"sub": user.email}
     )
 
     return {
