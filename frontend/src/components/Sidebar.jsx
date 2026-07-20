@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useChat } from "../context/ChatContext";
 
 export default function Sidebar() {
+
     const navigate = useNavigate();
 
     const { logout } = useAuth();
@@ -11,20 +12,44 @@ export default function Sidebar() {
     const {
         conversations,
         currentConversation,
-        setCurrentConversation,
+        selectConversation,
         newConversation,
     } = useChat();
 
     function handleLogout() {
+
         logout();
+
         navigate("/login");
+
     }
 
     async function handleNewChat() {
-        await newConversation();
+
+        console.log("New Chat clicked");
+
+        try {
+
+            const conversation = await newConversation();
+
+            console.log(
+                "Conversation created successfully:",
+                conversation
+            );
+
+        } catch (error) {
+
+            console.error(
+                "NEW CHAT ERROR:",
+                error
+            );
+
+        }
+
     }
 
     return (
+
         <aside className="w-72 bg-[#121A31] border-r border-gray-800 flex flex-col">
 
             <div className="p-6">
@@ -49,7 +74,7 @@ export default function Sidebar() {
                     <button
                         key={conversation.id}
                         onClick={() =>
-                            setCurrentConversation(conversation)
+                            selectConversation(conversation)
                         }
                         className={`w-full rounded-lg p-3 mb-2 text-left transition ${
                             currentConversation?.id === conversation.id
@@ -76,5 +101,7 @@ export default function Sidebar() {
             </div>
 
         </aside>
+
     );
+
 }

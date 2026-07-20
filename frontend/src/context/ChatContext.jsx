@@ -6,12 +6,12 @@ import {
 } from "react";
 
 import * as conversationsAPI from "../api/conversations";
+import * as messagesAPI from "../api/messages";
 import * as chatAPI from "../api/chat";
 
 const ChatContext = createContext();
 
-// Temporary workspace
-const DEFAULT_WORKSPACE_ID = 2;
+const DEFAULT_WORKSPACE_ID = 3;
 
 export function ChatProvider({ children }) {
 
@@ -19,6 +19,10 @@ export function ChatProvider({ children }) {
     const [currentConversation, setCurrentConversation] = useState(null);
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    // ----------------------------
+    // Load all conversations
+    // ----------------------------
 
     async function loadConversations() {
 
@@ -39,6 +43,45 @@ export function ChatProvider({ children }) {
 
     }
 
+    // ----------------------------
+    // Load messages
+    // ----------------------------
+
+    async function loadMessages(conversationId) {
+
+        try {
+
+            const data =
+                await messagesAPI.getMessages(
+                    conversationId
+                );
+
+            setMessages(data);
+
+        } catch (err) {
+
+            console.error(err);
+
+        }
+
+    }
+
+    // ----------------------------
+    // Select conversation
+    // ----------------------------
+
+    async function selectConversation(conversation) {
+
+        setCurrentConversation(conversation);
+
+        await loadMessages(conversation.id);
+
+    }
+
+    // ----------------------------
+    // Create conversation
+    // ----------------------------
+
     async function newConversation() {
 
         try {
@@ -53,9 +96,7 @@ export function ChatProvider({ children }) {
                 ...prev,
             ]);
 
-            setCurrentConversation(conversation);
-
-            setMessages([]);
+            await selectConversation(conversation);
 
             return conversation;
 
@@ -66,6 +107,10 @@ export function ChatProvider({ children }) {
         }
 
     }
+
+    // ----------------------------
+    // Send message
+    // ----------------------------
 
     async function sendMessage(prompt) {
 
@@ -113,6 +158,10 @@ export function ChatProvider({ children }) {
 
     }
 
+    // ----------------------------
+    // Initial load
+    // ----------------------------
+
     useEffect(() => {
 
         loadConversations();
@@ -125,11 +174,12 @@ export function ChatProvider({ children }) {
             value={{
                 conversations,
                 currentConversation,
-                setCurrentConversation,
+                selectConversation,
                 messages,
                 loading,
                 newConversation,
                 sendMessage,
+                loadMessages,
             }}
         >
 
