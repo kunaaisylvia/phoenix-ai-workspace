@@ -8,30 +8,64 @@ import {
 import * as conversationsAPI from "../api/conversations";
 import * as messagesAPI from "../api/messages";
 import * as chatAPI from "../api/chat";
+import * as workspacesAPI from "../api/workspaces";
 
 const ChatContext = createContext();
 
-const DEFAULT_WORKSPACE_ID = 3;
-
 export function ChatProvider({ children }) {
 
+    const [workspaceId, setWorkspaceId] = useState(null);
     const [conversations, setConversations] = useState([]);
     const [currentConversation, setCurrentConversation] = useState(null);
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
 
     // ----------------------------
-    // Load all conversations
+    // Initialize Workspace
     // ----------------------------
 
-    async function loadConversations() {
+    async function initializeWorkspace() {
+
+        try {
+
+            let workspaces =
+                await workspacesAPI.getWorkspaces();
+
+            if (workspaces.length === 0) {
+
+                const workspace =
+                    await workspacesAPI.createWorkspace();
+
+                workspaces = [workspace];
+
+            }
+
+            const id = workspaces[0].id;
+
+            setWorkspaceId(id);
+
+            return id;
+
+        } catch (err) {
+
+            console.error(err);
+
+            return null;
+
+        }
+
+    }
+
+    // ----------------------------
+    // Load Conversations
+    // ----------------------------
+
+    async function loadConversations(id) {
 
         try {
 
             const data =
-                await conversationsAPI.getConversations(
-                    DEFAULT_WORKSPACE_ID
-                );
+                await conversationsAPI.getConversations(id);
 
             setConversations(data);
 
@@ -44,7 +78,7 @@ export function ChatProvider({ children }) {
     }
 
     // ----------------------------
-    // Load messages
+    // Load Messages
     // ----------------------------
 
     async function loadMessages(conversationId) {
@@ -67,7 +101,7 @@ export function ChatProvider({ children }) {
     }
 
     // ----------------------------
-    // Select conversation
+    // Select Conversation
     // ----------------------------
 
     async function selectConversation(conversation) {
@@ -79,16 +113,18 @@ export function ChatProvider({ children }) {
     }
 
     // ----------------------------
-    // Create conversation
+    // Create Conversation
     // ----------------------------
 
     async function newConversation() {
+
+        if (!workspaceId) return;
 
         try {
 
             const conversation =
                 await conversationsAPI.createConversation(
-                    DEFAULT_WORKSPACE_ID
+                    workspaceId
                 );
 
             setConversations(prev => [
@@ -109,7 +145,7 @@ export function ChatProvider({ children }) {
     }
 
     // ----------------------------
-    // Send message
+    // Send Message
     // ----------------------------
 
     async function sendMessage(prompt) {
@@ -159,12 +195,25 @@ export function ChatProvider({ children }) {
     }
 
     // ----------------------------
-    // Initial load
+    // Initial Load
     // ----------------------------
 
     useEffect(() => {
 
-        loadConversations();
+        async function initialize() {
+
+            const id =
+                await initializeWorkspace();
+
+            if (id) {
+
+                await loadConversations(id);
+
+            }
+
+        }
+
+        initialize();
 
     }, []);
 
@@ -172,6 +221,7 @@ export function ChatProvider({ children }) {
 
         <ChatContext.Provider
             value={{
+                workspaceId,
                 conversations,
                 currentConversation,
                 selectConversation,
@@ -182,9 +232,7 @@ export function ChatProvider({ children }) {
                 loadMessages,
             }}
         >
-
             {children}
-
         </ChatContext.Provider>
 
     );
