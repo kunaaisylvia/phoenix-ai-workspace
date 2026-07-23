@@ -3,6 +3,7 @@ from sqlmodel import Session, select
 
 from backend.core.config import settings
 from backend.models.message import Message
+from backend.models.conversation import Conversation
 from backend.models.user import User
 from backend.schemas.message import MessageCreate
 from backend.services.message_service import create_message
@@ -44,7 +45,6 @@ Your personality:
 Rules:
 
 - Your name is Phoenix.
-- Always introduce yourself as Phoenix.
 - Never claim to be ChatGPT, OpenAI, Groq, Meta AI, or Llama.
 - Never mention your underlying model unless explicitly asked.
 - If asked who created you, respond that you were created as Phoenix AI Workspace.
@@ -69,6 +69,38 @@ def ask_phoenix(messages: list, stream: bool = False):
     )
 
 
+def generate_title(prompt: str) -> str:
+    """
+    Generate a short conversation title.
+    """
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "Generate a concise conversation title "
+                    "between 2 and 5 words. "
+                    "Return ONLY the title."
+                ),
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+        temperature=0.3,
+        max_tokens=20,
+    )
+
+    return (
+        response.choices[0]
+        .message.content.strip()
+        .replace('"', "")
+    )
+
+
 def chat(
     session: Session,
     conversation_id: int,
@@ -79,6 +111,7 @@ def chat(
     Standard chat endpoint.
     """
 
+    # Save user message
     create_message(
         session=session,
         message=MessageCreate(
@@ -89,6 +122,24 @@ def chat(
         current_user=current_user,
     )
 
+    # Auto-generate conversation title
+    conversation = session.get(
+        Conversation,
+        conversation_id,
+    )
+
+    if (
+        conversation
+        and conversation.title == "New Conversation"
+    ):
+
+        conversation.title = generate_title(prompt)
+
+        session.add(conversation)
+
+        session.commit()
+
+    # Load conversation history
     db_messages = session.exec(
         select(Message)
         .where(Message.conversation_id == conversation_id)
@@ -103,10 +154,12 @@ def chat(
         for message in db_messages
     ]
 
+    # Ask Phoenix
     response = ask_phoenix(history)
 
     assistant_reply = response.choices[0].message.content
 
+    # Save assistant reply
     create_message(
         session=session,
         message=MessageCreate(
@@ -142,6 +195,23 @@ def stream_chat(
         ),
         current_user=current_user,
     )
+
+    # Auto-generate conversation title
+    conversation = session.get(
+        Conversation,
+        conversation_id,
+    )
+
+    if (
+        conversation
+        and conversation.title == "New Conversation"
+    ):
+
+        conversation.title = generate_title(prompt)
+
+        session.add(conversation)
+
+        session.commit()
 
     # Load conversation history
     db_messages = session.exec(
