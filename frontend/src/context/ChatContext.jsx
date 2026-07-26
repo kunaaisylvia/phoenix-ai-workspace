@@ -14,11 +14,11 @@ const ChatContext = createContext();
 
 export function ChatProvider({ children }) {
 
-    const [workspaceId, setWorkspaceId] = useState(null);
     const [conversations, setConversations] = useState([]);
     const [currentConversation, setCurrentConversation] = useState(null);
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [workspaceId, setWorkspaceId] = useState(null);
 
     // ----------------------------
     // Initialize Workspace
@@ -40,11 +40,9 @@ export function ChatProvider({ children }) {
 
             }
 
-            const id = workspaces[0].id;
+            setWorkspaceId(workspaces[0].id);
 
-            setWorkspaceId(id);
-
-            return id;
+            return workspaces[0].id;
 
         } catch (err) {
 
@@ -69,9 +67,13 @@ export function ChatProvider({ children }) {
 
             setConversations(data);
 
+            return data;
+
         } catch (err) {
 
             console.error(err);
+
+            return [];
 
         }
 
@@ -113,7 +115,7 @@ export function ChatProvider({ children }) {
     }
 
     // ----------------------------
-    // Create Conversation
+    // New Conversation
     // ----------------------------
 
     async function newConversation() {
@@ -182,6 +184,23 @@ export function ChatProvider({ children }) {
                 assistantMessage,
             ]);
 
+            // Reload conversations so new titles appear
+            const updatedConversations =
+                await loadConversations(workspaceId);
+
+            // Update the active conversation
+            const updatedConversation =
+                updatedConversations.find(
+                    (conversation) =>
+                        conversation.id === currentConversation.id
+                );
+
+            if (updatedConversation) {
+
+                setCurrentConversation(updatedConversation);
+
+            }
+
         } catch (err) {
 
             console.error(err);
@@ -221,7 +240,6 @@ export function ChatProvider({ children }) {
 
         <ChatContext.Provider
             value={{
-                workspaceId,
                 conversations,
                 currentConversation,
                 selectConversation,
@@ -232,7 +250,9 @@ export function ChatProvider({ children }) {
                 loadMessages,
             }}
         >
+
             {children}
+
         </ChatContext.Provider>
 
     );
