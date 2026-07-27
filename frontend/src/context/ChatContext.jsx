@@ -5,6 +5,8 @@ import {
     useState,
 } from "react";
 
+import { useAuth } from "./AuthContext";
+
 import * as conversationsAPI from "../api/conversations";
 import * as messagesAPI from "../api/messages";
 import * as chatAPI from "../api/chat";
@@ -13,6 +15,8 @@ import * as workspacesAPI from "../api/workspaces";
 const ChatContext = createContext();
 
 export function ChatProvider({ children }) {
+
+    const { authenticated } = useAuth();
 
     const [conversations, setConversations] = useState([]);
     const [currentConversation, setCurrentConversation] = useState(null);
@@ -184,11 +188,9 @@ export function ChatProvider({ children }) {
                 assistantMessage,
             ]);
 
-            // Reload conversations so new titles appear
             const updatedConversations =
                 await loadConversations(workspaceId);
 
-            // Update the active conversation
             const updatedConversation =
                 updatedConversations.find(
                     (conversation) =>
@@ -214,19 +216,31 @@ export function ChatProvider({ children }) {
     }
 
     // ----------------------------
-    // Initial Load
+    // Initialize AFTER Login
     // ----------------------------
 
     useEffect(() => {
+
+        if (!authenticated) return;
 
         async function initialize() {
 
             const id =
                 await initializeWorkspace();
 
-            if (id) {
+            if (!id) return;
 
+            const conversations =
                 await loadConversations(id);
+
+            if (
+                conversations.length > 0 &&
+                !currentConversation
+            ) {
+
+                await selectConversation(
+                    conversations[0]
+                );
 
             }
 
@@ -234,7 +248,7 @@ export function ChatProvider({ children }) {
 
         initialize();
 
-    }, []);
+    }, [authenticated]);
 
     return (
 
