@@ -156,62 +156,93 @@ export function ChatProvider({ children }) {
 
     async function sendMessage(prompt) {
 
-        if (!currentConversation) return;
+    if (!currentConversation) return;
 
-        const userMessage = {
-            role: "user",
-            content: prompt,
-        };
+    const userMessage = {
+        role: "user",
+        content: prompt,
+    };
 
-        setMessages(prev => [
-            ...prev,
-            userMessage,
-        ]);
+    setMessages(prev => [
+        ...prev,
+        userMessage,
+    ]);
 
-        setLoading(true);
+    // Empty assistant message
+    setMessages(prev => [
+        ...prev,
+        {
+            role: "assistant",
+            content: "",
+        },
+    ]);
 
-        try {
+    setLoading(true);
 
-            const response =
-                await chatAPI.sendMessage(
-                    currentConversation.id,
-                    prompt
-                );
+    try {
 
-            const assistantMessage = {
-                role: "assistant",
-                content: response.response,
-            };
+        const reader =
+            await chatAPI.streamMessage(
+                currentConversation.id,
+                prompt
+            );
 
-            setMessages(prev => [
-                ...prev,
-                assistantMessage,
-            ]);
+        const decoder = new TextDecoder();
 
-            const updatedConversations =
-                await loadConversations(workspaceId);
+        let fullResponse = "";
 
-            const updatedConversation =
-                updatedConversations.find(
-                    (conversation) =>
-                        conversation.id === currentConversation.id
-                );
+        while (true) {
 
-            if (updatedConversation) {
+            const { done, value } =
+                await reader.read();
 
-                setCurrentConversation(updatedConversation);
+            if (done) break;
 
-            }
+            const chunk =
+                decoder.decode(value);
 
-        } catch (err) {
+            fullResponse += chunk;
 
-            console.error(err);
+            setMessages(prev => {
 
-        } finally {
+                const updated = [...prev];
 
-            setLoading(false);
+                updated[updated.length - 1] = {
+                    role: "assistant",
+                    content: fullResponse,
+                };
+
+                return updated;
+
+            });
 
         }
+
+        const updatedConversations =
+            await loadConversations(workspaceId);
+
+        const updatedConversation =
+            updatedConversations.find(
+                conversation =>
+                    conversation.id ===
+                    currentConversation.id
+            );
+
+        if (updatedConversation) {
+
+            setCurrentConversation(
+                updatedConversation
+            );
+
+        }
+
+    } catch (err) {
+
+        console.error(err);
+
+    } finally {
+
+        setLoading(false);
 
     }
 
@@ -277,4 +308,5 @@ export function useChat() {
 
     return useContext(ChatContext);
 
+}
 }
