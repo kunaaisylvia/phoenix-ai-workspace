@@ -246,7 +246,7 @@ export function ChatProvider({ children }) {
 
     }
 
-    // ----------------------------
+}// ----------------------------
     // Initialize AFTER Login
     // ----------------------------
 
@@ -308,5 +308,4 @@ export function useChat() {
 
     return useContext(ChatContext);
 
-}
 }

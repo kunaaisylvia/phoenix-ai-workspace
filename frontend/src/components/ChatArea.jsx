@@ -1,4 +1,5 @@
 import { useChat } from "../context/ChatContext";
+import MarkdownMessage from "./MarkdownMessage";
 
 export default function ChatArea() {
 
@@ -39,13 +40,25 @@ export default function ChatArea() {
 
                 <div
                     key={index}
-                    className={`max-w-3xl rounded-xl p-4 ${
+                    className={`max-w-3xl rounded-xl p-4 whitespace-pre-wrap ${
                         message.role === "user"
-                            ? "ml-auto bg-orange-500"
-                            : "mr-auto bg-[#1D2948]"
+                            ? "ml-auto bg-orange-500 text-white"
+                            : "mr-auto bg-[#1D2948] text-white"
                     }`}
                 >
-                    {message.content}
+
+                    {message.role === "assistant" ? (
+
+                        <MarkdownMessage>
+                            {message.content}
+                        </MarkdownMessage>
+
+                    ) : (
+
+                        message.content
+
+                    )}
+
                 </div>
 
             ))}

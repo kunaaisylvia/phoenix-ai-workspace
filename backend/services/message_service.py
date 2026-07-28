@@ -71,8 +71,15 @@ def get_messages(
         Workspace,
         conversation.workspace_id,
     )
+    print("\n========== MESSAGE AUTH ==========")
+    print("Conversation ID:", conversation.id)
+    print("Workspace ID:", workspace.id)
+    print("Workspace Owner:", workspace.owner_id)
+    print("Current User:", current_user.id)
+    print("==================================")
 
     if workspace.owner_id != current_user.id:
+        print("ACCESS DENIED")
         raise HTTPException(
             status_code=403,
             detail="Access denied",
