@@ -18,18 +18,23 @@ export function useChatStream({
 
         if (!currentConversation) return;
 
+        // Prevent multiple simultaneous streams
+        if (loading) return;
+
         const userMessage = {
             role: "user",
             content: prompt,
         };
 
+        const assistantMessage = {
+            role: "assistant",
+            content: "",
+        };
+
         setMessages(prev => [
             ...prev,
             userMessage,
-            {
-                role: "assistant",
-                content: "",
-            },
+            assistantMessage,
         ]);
 
         setLoading(true);
@@ -52,21 +57,32 @@ export function useChatStream({
 
             while (true) {
 
-                const { done, value } =
-                    await reader.read();
+                const {
+                    done,
+                    value,
+                } = await reader.read();
 
                 if (done) break;
 
-                fullResponse +=
-                    decoder.decode(value);
+                fullResponse += decoder.decode(
+                    value,
+                    {
+                        stream: true,
+                    }
+                );
 
                 setMessages(prev => {
 
                     const updated = [...prev];
 
-                    updated[updated.length - 1] = {
+                    updated[
+                        updated.length - 1
+                    ] = {
+
                         role: "assistant",
+
                         content: fullResponse,
+
                     };
 
                     return updated;
@@ -99,7 +115,10 @@ export function useChatStream({
 
             if (err.name !== "AbortError") {
 
-                console.error(err);
+                console.error(
+                    "Streaming failed:",
+                    err
+                );
 
             }
 
@@ -115,11 +134,13 @@ export function useChatStream({
 
     function stopGeneration() {
 
-        if (abortController.current) {
+        if (!abortController.current) return;
 
-            abortController.current.abort();
+        abortController.current.abort();
 
-        }
+        abortController.current = null;
+
+        setLoading(false);
 
     }
 
