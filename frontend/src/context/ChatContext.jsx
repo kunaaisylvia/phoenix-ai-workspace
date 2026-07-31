@@ -2,15 +2,13 @@ import {
     createContext,
     useContext,
     useEffect,
-    useState,
 } from "react";
 
 import { useAuth } from "./AuthContext";
 
-import * as conversationsAPI from "../api/conversations";
-import * as messagesAPI from "../api/messages";
-import * as chatAPI from "../api/chat";
-import * as workspacesAPI from "../api/workspaces";
+import { useWorkspace } from "../hooks/useWorkspace";
+import { useConversations } from "../hooks/useConversations";
+import { useChatStream } from "../hooks/useChatStream";
 
 const ChatContext = createContext();
 
@@ -18,236 +16,55 @@ export function ChatProvider({ children }) {
 
     const { authenticated } = useAuth();
 
-    const [conversations, setConversations] = useState([]);
-    const [currentConversation, setCurrentConversation] = useState(null);
-    const [messages, setMessages] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [workspaceId, setWorkspaceId] = useState(null);
-
     // ----------------------------
-    // Initialize Workspace
+    // Workspace
     // ----------------------------
 
-    async function initializeWorkspace() {
-
-        try {
-
-            let workspaces =
-                await workspacesAPI.getWorkspaces();
-
-            if (workspaces.length === 0) {
-
-                const workspace =
-                    await workspacesAPI.createWorkspace();
-
-                workspaces = [workspace];
-
-            }
-
-            setWorkspaceId(workspaces[0].id);
-
-            return workspaces[0].id;
-
-        } catch (err) {
-
-            console.error(err);
-
-            return null;
-
-        }
-
-    }
+    const {
+        workspaceId,
+        initializeWorkspace,
+    } = useWorkspace();
 
     // ----------------------------
-    // Load Conversations
+    // Conversations
     // ----------------------------
 
-    async function loadConversations(id) {
+    const {
+        conversations,
+        currentConversation,
+        messages,
 
-        try {
+        setMessages,
+        setCurrentConversation,
 
-            const data =
-                await conversationsAPI.getConversations(id);
+        loadConversations,
+        loadMessages,
+        selectConversation,
+        newConversation,
 
-            setConversations(data);
-
-            return data;
-
-        } catch (err) {
-
-            console.error(err);
-
-            return [];
-
-        }
-
-    }
+    } = useConversations(workspaceId);
 
     // ----------------------------
-    // Load Messages
+    // Chat Streaming
     // ----------------------------
 
-    async function loadMessages(conversationId) {
+    const {
+        loading,
+        sendMessage,
+        stopGeneration,
+    } = useChatStream({
 
-        try {
+        currentConversation,
+        workspaceId,
 
-            const data =
-                await messagesAPI.getMessages(
-                    conversationId
-                );
+        setMessages,
+        loadConversations,
+        setCurrentConversation,
 
-            setMessages(data);
-
-        } catch (err) {
-
-            console.error(err);
-
-        }
-
-    }
+    });
 
     // ----------------------------
-    // Select Conversation
-    // ----------------------------
-
-    async function selectConversation(conversation) {
-
-        setCurrentConversation(conversation);
-
-        await loadMessages(conversation.id);
-
-    }
-
-    // ----------------------------
-    // New Conversation
-    // ----------------------------
-
-    async function newConversation() {
-
-        if (!workspaceId) return;
-
-        try {
-
-            const conversation =
-                await conversationsAPI.createConversation(
-                    workspaceId
-                );
-
-            setConversations(prev => [
-                conversation,
-                ...prev,
-            ]);
-
-            await selectConversation(conversation);
-
-            return conversation;
-
-        } catch (err) {
-
-            console.error(err);
-
-        }
-
-    }
-
-    // ----------------------------
-    // Send Message
-    // ----------------------------
-
-    async function sendMessage(prompt) {
-
-    if (!currentConversation) return;
-
-    const userMessage = {
-        role: "user",
-        content: prompt,
-    };
-
-    setMessages(prev => [
-        ...prev,
-        userMessage,
-    ]);
-
-    // Empty assistant message
-    setMessages(prev => [
-        ...prev,
-        {
-            role: "assistant",
-            content: "",
-        },
-    ]);
-
-    setLoading(true);
-
-    try {
-
-        const reader =
-            await chatAPI.streamMessage(
-                currentConversation.id,
-                prompt
-            );
-
-        const decoder = new TextDecoder();
-
-        let fullResponse = "";
-
-        while (true) {
-
-            const { done, value } =
-                await reader.read();
-
-            if (done) break;
-
-            const chunk =
-                decoder.decode(value);
-
-            fullResponse += chunk;
-
-            setMessages(prev => {
-
-                const updated = [...prev];
-
-                updated[updated.length - 1] = {
-                    role: "assistant",
-                    content: fullResponse,
-                };
-
-                return updated;
-
-            });
-
-        }
-
-        const updatedConversations =
-            await loadConversations(workspaceId);
-
-        const updatedConversation =
-            updatedConversations.find(
-                conversation =>
-                    conversation.id ===
-                    currentConversation.id
-            );
-
-        if (updatedConversation) {
-
-            setCurrentConversation(
-                updatedConversation
-            );
-
-        }
-
-    } catch (err) {
-
-        console.error(err);
-
-    } finally {
-
-        setLoading(false);
-
-    }
-
-}// ----------------------------
-    // Initialize AFTER Login
+    // Initialize After Login
     // ----------------------------
 
     useEffect(() => {
@@ -285,14 +102,25 @@ export function ChatProvider({ children }) {
 
         <ChatContext.Provider
             value={{
+
                 conversations,
+
                 currentConversation,
+
                 selectConversation,
+
                 messages,
+
                 loading,
+
                 newConversation,
+
                 sendMessage,
+
+                stopGeneration,
+
                 loadMessages,
+
             }}
         >
 
