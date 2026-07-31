@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { useChat } from "../context/ChatContext";
 
@@ -6,135 +6,170 @@ export default function PromptInput() {
 
     const [prompt, setPrompt] = useState("");
 
-    const textareaRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const {
 
         sendMessage,
+
         stopGeneration,
+
         loading,
+
         currentConversation,
 
+        files,
+
+        uploading,
+
+        uploadFile,
+
+        removeFile,
+
     } = useChat();
-
-    useEffect(() => {
-
-        if (!textareaRef.current) return;
-
-        textareaRef.current.style.height = "0px";
-
-        textareaRef.current.style.height =
-            `${textareaRef.current.scrollHeight}px`;
-
-    }, [prompt]);
 
     async function handleSend() {
 
         if (!prompt.trim()) return;
 
-        await sendMessage(prompt.trim());
+        await sendMessage(prompt);
 
         setPrompt("");
 
-        textareaRef.current.style.height = "auto";
-
     }
 
-    function handleKeyDown(e) {
+    async function handleFileChange(event) {
 
-        if (
-            e.key === "Enter" &&
-            !e.shiftKey
-        ) {
+        const file = event.target.files?.[0];
 
-            e.preventDefault();
+        if (!file) return;
 
-            if (!loading) {
+        await uploadFile(file);
 
-                handleSend();
-
-            }
-
-        }
+        event.target.value = "";
 
     }
 
     return (
 
-        <div className="border-t border-gray-800 bg-[#0F172A] p-6">
+        <div className="border-t border-gray-800 p-6">
 
-            <div className="mx-auto max-w-4xl">
+            {/* Uploaded Files */}
 
-                <div className="flex items-end gap-4 rounded-2xl border border-gray-700 bg-[#1D2948] p-3">
+            {files.length > 0 && (
 
-                    <textarea
+                <div className="mb-4 flex flex-wrap gap-2">
 
-                        ref={textareaRef}
+                    {files.map(file => (
 
-                        rows={1}
-
-                        value={prompt}
-
-                        onChange={(e) =>
-                            setPrompt(e.target.value)
-                        }
-
-                        onKeyDown={handleKeyDown}
-
-                        disabled={
-                            !currentConversation ||
-                            loading
-                        }
-
-                        placeholder={
-                            currentConversation
-                                ? "Ask Phoenix anything..."
-                                : "Create a new chat first..."
-                        }
-
-                        className="max-h-60 min-h-[28px] flex-1 resize-none overflow-y-auto bg-transparent text-white outline-none placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-
-                    />
-
-                    {loading ? (
-
-                        <button
-
-                            onClick={stopGeneration}
-
-                            className="rounded-xl bg-red-600 px-5 py-3 font-semibold text-white transition hover:bg-red-700"
-
+                        <div
+                            key={file.id}
+                            className="flex items-center gap-2 rounded-lg bg-[#1D2948] px-4 py-2"
                         >
-                            Stop
-                        </button>
 
-                    ) : (
+                            <span>
+                                📄 {file.original_name}
+                            </span>
 
-                        <button
+                            <button
+                                onClick={() =>
+                                    removeFile(file.id)
+                                }
+                                className="text-red-400 hover:text-red-500"
+                            >
+                                ✕
+                            </button>
 
-                            onClick={handleSend}
+                        </div>
 
-                            disabled={
-                                !currentConversation ||
-                                !prompt.trim()
-                            }
-
-                            className="rounded-xl bg-orange-500 px-5 py-3 font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
-
-                        >
-                            Send
-                        </button>
-
-                    )}
+                    ))}
 
                 </div>
 
-                <p className="mt-3 text-center text-xs text-gray-500">
+            )}
 
-                    Press <span className="font-semibold">Enter</span> to send ·{" "}
-                    <span className="font-semibold">Shift + Enter</span> for a new line
+            <div className="flex gap-4">
 
-                </p>
+                <button
+
+                    onClick={() =>
+                        fileInputRef.current.click()
+                    }
+
+                    disabled={uploading}
+
+                    className="rounded-xl bg-[#1D2948] px-4 hover:bg-[#26365e]"
+
+                >
+
+                    📎
+
+                </button>
+
+                <input
+
+                    ref={fileInputRef}
+
+                    type="file"
+
+                    hidden
+
+                    onChange={handleFileChange}
+
+                />
+
+                <input
+
+                    value={prompt}
+
+                    onChange={(e) =>
+                        setPrompt(e.target.value)
+                    }
+
+                    onKeyDown={(e) => {
+
+                        if (e.key === "Enter") {
+
+                            handleSend();
+
+                        }
+
+                    }}
+
+                    disabled={!currentConversation}
+
+                    placeholder={
+                        currentConversation
+                            ? "Ask Phoenix anything..."
+                            : "Create a new chat first..."
+                    }
+
+                    className="flex-1 rounded-xl bg-[#1D2948] px-5 py-4 outline-none"
+
+                />
+
+                <button
+
+                    onClick={
+                        loading
+                            ? stopGeneration
+                            : handleSend
+                    }
+
+                    disabled={
+                        !loading &&
+                        !currentConversation
+                    }
+
+                    className="rounded-xl bg-orange-500 px-8 font-semibold hover:bg-orange-600 disabled:opacity-50"
+
+                >
+
+                    {loading
+                        ? "Stop"
+                        : "Send"}
+
+                </button>
 
             </div>
 

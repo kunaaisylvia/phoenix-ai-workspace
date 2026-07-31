@@ -8,6 +8,7 @@ export function useChatStream({
     setMessages,
     loadConversations,
     setCurrentConversation,
+    clearFiles,
 }) {
 
     const [loading, setLoading] = useState(false);
@@ -18,23 +19,18 @@ export function useChatStream({
 
         if (!currentConversation) return;
 
-        // Prevent multiple simultaneous streams
-        if (loading) return;
-
         const userMessage = {
             role: "user",
             content: prompt,
         };
 
-        const assistantMessage = {
-            role: "assistant",
-            content: "",
-        };
-
         setMessages(prev => [
             ...prev,
             userMessage,
-            assistantMessage,
+            {
+                role: "assistant",
+                content: "",
+            },
         ]);
 
         setLoading(true);
@@ -57,32 +53,20 @@ export function useChatStream({
 
             while (true) {
 
-                const {
-                    done,
-                    value,
-                } = await reader.read();
+                const { done, value } =
+                    await reader.read();
 
                 if (done) break;
 
-                fullResponse += decoder.decode(
-                    value,
-                    {
-                        stream: true,
-                    }
-                );
+                fullResponse += decoder.decode(value);
 
                 setMessages(prev => {
 
                     const updated = [...prev];
 
-                    updated[
-                        updated.length - 1
-                    ] = {
-
+                    updated[updated.length - 1] = {
                         role: "assistant",
-
                         content: fullResponse,
-
                     };
 
                     return updated;
@@ -111,14 +95,17 @@ export function useChatStream({
 
             }
 
+            if (clearFiles) {
+
+                clearFiles();
+
+            }
+
         } catch (err) {
 
             if (err.name !== "AbortError") {
 
-                console.error(
-                    "Streaming failed:",
-                    err
-                );
+                console.error(err);
 
             }
 
@@ -134,13 +121,11 @@ export function useChatStream({
 
     function stopGeneration() {
 
-        if (!abortController.current) return;
+        if (abortController.current) {
 
-        abortController.current.abort();
+            abortController.current.abort();
 
-        abortController.current = null;
-
-        setLoading(false);
+        }
 
     }
 

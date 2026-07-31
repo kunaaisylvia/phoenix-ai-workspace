@@ -9,6 +9,7 @@ import { useAuth } from "./AuthContext";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { useConversations } from "../hooks/useConversations";
 import { useChatStream } from "../hooks/useChatStream";
+import { useFiles } from "../hooks/useFiles";
 
 const ChatContext = createContext();
 
@@ -30,41 +31,78 @@ export function ChatProvider({ children }) {
     // ----------------------------
 
     const {
+
         conversations,
+
         currentConversation,
+
         messages,
 
         setMessages,
+
         setCurrentConversation,
 
         loadConversations,
+
         loadMessages,
+
         selectConversation,
+
         newConversation,
 
     } = useConversations(workspaceId);
+
+    // ----------------------------
+    // Files
+    // ----------------------------
+
+    const {
+
+        files,
+
+        uploading,
+
+        uploadFile,
+
+        removeFile,
+
+        clearFiles,
+
+    } = useFiles(
+        workspaceId,
+        currentConversation
+    );
 
     // ----------------------------
     // Chat Streaming
     // ----------------------------
 
     const {
+
         loading,
+
         sendMessage,
+
         stopGeneration,
+
     } = useChatStream({
 
         currentConversation,
+
         workspaceId,
 
         setMessages,
+
         loadConversations,
+
         setCurrentConversation,
+
+        clearFiles,
 
     });
 
     // ----------------------------
-    // Initialize After Login
+    // Initialize AFTER Login
     // ----------------------------
 
     useEffect(() => {
@@ -98,10 +136,16 @@ export function ChatProvider({ children }) {
 
     }, [authenticated]);
 
+    // ----------------------------
+    // Provider
+    // ----------------------------
+
     return (
 
         <ChatContext.Provider
             value={{
+
+                // Conversations
 
                 conversations,
 
@@ -109,17 +153,33 @@ export function ChatProvider({ children }) {
 
                 selectConversation,
 
+                newConversation,
+
+                loadMessages,
+
+                // Messages
+
                 messages,
 
-                loading,
+                // Chat
 
-                newConversation,
+                loading,
 
                 sendMessage,
 
                 stopGeneration,
 
-                loadMessages,
+                // Files
+
+                files,
+
+                uploading,
+
+                uploadFile,
+
+                removeFile,
+
+                clearFiles,
 
             }}
         >
