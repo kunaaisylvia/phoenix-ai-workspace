@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 
 import { useChat } from "../context/ChatContext";
+import FileChip from "./FileChip";
 
 export default function PromptInput() {
 
@@ -28,15 +29,17 @@ export default function PromptInput() {
 
     } = useChat();
 
-    async function handleSend() {
+async function handleSend() {
 
-        if (!prompt.trim()) return;
+    if (!prompt.trim()) return;
 
-        await sendMessage(prompt);
+    const fileIds = files.map(file => file.id);
 
-        setPrompt("");
+    await sendMessage(prompt, fileIds);
 
-    }
+    setPrompt("");
+
+}
 
     async function handleFileChange(event) {
 
@@ -62,25 +65,15 @@ export default function PromptInput() {
 
                     {files.map(file => (
 
-                        <div
+                        <FileChip
+
                             key={file.id}
-                            className="flex items-center gap-2 rounded-lg bg-[#1D2948] px-4 py-2"
-                        >
 
-                            <span>
-                                📄 {file.original_name}
-                            </span>
+                            file={file}
 
-                            <button
-                                onClick={() =>
-                                    removeFile(file.id)
-                                }
-                                className="text-red-400 hover:text-red-500"
-                            >
-                                ✕
-                            </button>
+                            onRemove={removeFile}
 
-                        </div>
+                        />
 
                     ))}
 
@@ -88,21 +81,45 @@ export default function PromptInput() {
 
             )}
 
-            <div className="flex gap-4">
+            {/* Prompt */}
+
+            <div className="flex items-center gap-4">
+
+                {/* Attach File */}
 
                 <button
 
+                    type="button"
+
                     onClick={() =>
-                        fileInputRef.current.click()
+                        fileInputRef.current?.click()
                     }
 
-                    disabled={uploading}
+                    disabled={
+                        uploading ||
+                        loading
+                    }
 
-                    className="rounded-xl bg-[#1D2948] px-4 hover:bg-[#26365e]"
+                    className="
+                        flex
+                        h-12
+                        w-12
+                        items-center
+                        justify-center
+                        rounded-xl
+                        bg-[#1D2948]
+                        text-lg
+                        transition
+                        hover:bg-[#26365E]
+                        disabled:cursor-not-allowed
+                        disabled:opacity-50
+                    "
 
                 >
 
-                    📎
+                    {uploading
+                        ? "..."
+                        : "📎"}
 
                 </button>
 
@@ -118,6 +135,8 @@ export default function PromptInput() {
 
                 />
 
+                {/* Prompt Input */}
+
                 <input
 
                     value={prompt}
@@ -128,7 +147,12 @@ export default function PromptInput() {
 
                     onKeyDown={(e) => {
 
-                        if (e.key === "Enter") {
+                        if (
+                            e.key === "Enter" &&
+                            !e.shiftKey
+                        ) {
+
+                            e.preventDefault();
 
                             handleSend();
 
@@ -136,7 +160,10 @@ export default function PromptInput() {
 
                     }}
 
-                    disabled={!currentConversation}
+                    disabled={
+                        !currentConversation ||
+                        uploading
+                    }
 
                     placeholder={
                         currentConversation
@@ -144,11 +171,23 @@ export default function PromptInput() {
                             : "Create a new chat first..."
                     }
 
-                    className="flex-1 rounded-xl bg-[#1D2948] px-5 py-4 outline-none"
+                    className="
+                        flex-1
+                        rounded-xl
+                        bg-[#1D2948]
+                        px-5
+                        py-4
+                        outline-none
+                        placeholder:text-gray-400
+                    "
 
                 />
 
+                {/* Send / Stop */}
+
                 <button
+
+                    type="button"
 
                     onClick={
                         loading
@@ -157,11 +196,23 @@ export default function PromptInput() {
                     }
 
                     disabled={
-                        !loading &&
-                        !currentConversation
+                        uploading ||
+                        (!loading &&
+                            !currentConversation)
                     }
 
-                    className="rounded-xl bg-orange-500 px-8 font-semibold hover:bg-orange-600 disabled:opacity-50"
+                    className="
+                        rounded-xl
+                        bg-orange-500
+                        px-8
+                        py-4
+                        font-semibold
+                        text-white
+                        transition
+                        hover:bg-orange-600
+                        disabled:cursor-not-allowed
+                        disabled:opacity-50
+                    "
 
                 >
 

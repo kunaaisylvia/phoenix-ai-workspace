@@ -14,7 +14,18 @@ export function useFiles(
 
     async function uploadFile(file) {
 
-        if (!workspaceId) return;
+        console.log("📎 Upload started");
+        console.log("Selected file:", file);
+        console.log("Workspace ID:", workspaceId);
+        console.log("Conversation ID:", currentConversation?.id);
+
+        if (!workspaceId) {
+
+            console.error("❌ No workspace ID found.");
+
+            return;
+
+        }
 
         setUploading(true);
 
@@ -31,6 +42,11 @@ export function useFiles(
 
                 );
 
+            console.log(
+                "✅ Backend returned:",
+                uploadedFile
+            );
+
             setFiles(prev => [
 
                 ...prev,
@@ -43,7 +59,10 @@ export function useFiles(
 
         } catch (err) {
 
-            console.error(err);
+            console.error(
+                "❌ Upload failed:",
+                err
+            );
 
         } finally {
 

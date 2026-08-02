@@ -106,10 +106,14 @@ def chat(
     conversation_id: int,
     prompt: str,
     current_user: User,
+    file_ids: list[int] | None = None,
 ):
+
     """
     Standard chat endpoint.
     """
+
+    file_ids = file_ids or []
 
     # Save user message
     create_message(
@@ -180,10 +184,14 @@ def stream_chat(
     conversation_id: int,
     prompt: str,
     current_user: User,
+    file_ids: list[int] | None = None,
 ):
+
     """
     Streaming chat endpoint.
     """
+    
+    file_ids = file_ids or []
 
     # Save user message
     create_message(

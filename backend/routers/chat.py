@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -16,6 +18,7 @@ router = APIRouter(
 
 class ChatRequest(BaseModel):
     prompt: str
+    file_ids: List[int] = []
 
 
 @router.post("/{conversation_id}")
@@ -29,6 +32,7 @@ def chat_with_phoenix(
         session=session,
         conversation_id=conversation_id,
         prompt=request.prompt,
+        file_ids=request.file_ids,
         current_user=current_user,
     )
 
@@ -45,6 +49,7 @@ def stream_with_phoenix(
             session=session,
             conversation_id=conversation_id,
             prompt=request.prompt,
+            file_ids=request.file_ids,
             current_user=current_user,
         ),
         media_type="text/plain",

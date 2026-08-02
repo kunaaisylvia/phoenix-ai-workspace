@@ -2,7 +2,8 @@ import API from "./api";
 
 export async function sendMessage(
     conversationId,
-    prompt
+    prompt,
+    fileIds = []
 ) {
     const token = localStorage.getItem("token");
 
@@ -10,6 +11,7 @@ export async function sendMessage(
         `/chat/${conversationId}`,
         {
             prompt,
+            file_ids: fileIds,
         },
         {
             headers: {
@@ -23,7 +25,9 @@ export async function sendMessage(
 
 export async function streamMessage(
     conversationId,
-    prompt
+    prompt,
+    fileIds = [],
+    signal
 ) {
     const token = localStorage.getItem("token");
 
@@ -31,12 +35,14 @@ export async function streamMessage(
         `http://127.0.0.1:8000/chat/stream/${conversationId}`,
         {
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
                 prompt,
+                file_ids: fileIds,
             }),
         }
     );

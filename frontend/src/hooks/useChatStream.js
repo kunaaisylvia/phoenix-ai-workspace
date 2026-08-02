@@ -15,7 +15,9 @@ export function useChatStream({
 
     const abortController = useRef(null);
 
-    async function sendMessage(prompt) {
+    async function sendMessage(prompt,
+    fileIds = []
+) {
 
         if (!currentConversation) return;
 
@@ -44,6 +46,7 @@ export function useChatStream({
                 await chatAPI.streamMessage(
                     currentConversation.id,
                     prompt,
+                    fileIds,
                     abortController.current.signal
                 );
 
